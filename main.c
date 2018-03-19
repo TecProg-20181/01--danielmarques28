@@ -20,21 +20,7 @@ typedef struct _image {
     unsigned int height;
 } Image;
 
-int pixel_equal(Pixel pixel1, Pixel pixel2) {
-    if (pixel1.red == pixel2.red &&
-        pixel1.green == pixel2.green &&
-        pixel1.blue == pixel2.blue)
-        return 1;
-    return 0;
-}
-
-Image gray_scale(Image image) {
-    /*for (unsigned int i = 0; i < image.h; ++i) {
-        for (unsigned int j = 0; j < image.w; ++j) {
-            print("%u", image.pixel[i][j][RED] + image.pixel[i][j][GREEN] + image.pixel[i][j][BLUE]);
-        }
-    }*/
-
+Image gray_scale_filter(Image image) {
     for (unsigned int line = 0; line < image.height; ++line) {
         for (unsigned int column = 0; column < image.width; ++column) {
             int average = image.pixel[line][column][RED] +
@@ -50,7 +36,7 @@ Image gray_scale(Image image) {
     return image;
 }
 
-void blur(unsigned int height, unsigned short int pixel[WIDTH][HEIGHT][RGB], int blur_size, unsigned int width) {
+void blur_filter(unsigned int height, unsigned int width, unsigned short int pixel[WIDTH][HEIGHT][RGB], int blur_size) {
     for (unsigned int line = 0; line < height; ++line) {
         for (unsigned int column = 0; column < width; ++column) {
             Pixel average = {0, 0, 0};
@@ -65,7 +51,6 @@ void blur(unsigned int height, unsigned short int pixel[WIDTH][HEIGHT][RGB], int
                 }
             }
 
-            // printf("%u", average.red)
             average.red /= blur_size * blur_size;
             average.green /= blur_size * blur_size;
             average.blue /= blur_size * blur_size;
@@ -77,7 +62,7 @@ void blur(unsigned int height, unsigned short int pixel[WIDTH][HEIGHT][RGB], int
     }
 }
 
-Image rotate_right_90(Image image) {
+Image rotate_right_90_filter(Image image) {
     Image rotation;
 
     rotation.width = image.height;
@@ -94,7 +79,7 @@ Image rotate_right_90(Image image) {
     return rotation;
 }
 
-void invert_colors(unsigned short int pixel[WIDTH][HEIGHT][RGB],
+void invert_colors_filter(unsigned short int pixel[WIDTH][HEIGHT][RGB],
                     unsigned int width, unsigned int height) {
     for (unsigned int line = 0; line < height; ++line) {
         for (unsigned int column = 0; column < width; ++column) {
@@ -105,7 +90,7 @@ void invert_colors(unsigned short int pixel[WIDTH][HEIGHT][RGB],
     }
 }
 
-Image cut_image(Image image, int coord_x, int coord_y, int width, int height) {
+Image cut_image_filter(Image image, int coord_x, int coord_y, int width, int height) {
     Image cropped;
 
     cropped.width = width;
@@ -122,8 +107,63 @@ Image cut_image(Image image, int coord_x, int coord_y, int width, int height) {
     return cropped;
 }
 
+Image sepia_filter(Image image) {
+    for(int line = 0; line < image.height; ++line) {
+        for(int column = 0; column < image.width; ++column) {
+            unsigned short int pixel[3];
+            pixel[RED] = image.pixel[line][column][RED];
+            pixel[GREEN] = image.pixel[line][column][GREEN];
+            pixel[BLUE] = image.pixel[line][column][BLUE];
 
-int main() {
+            int filter =  pixel[RED] * .393 + pixel[GREEN] * .769 + pixel[BLUE] * .189;
+            int small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
+            image.pixel[line][column][RED] = small_r;
+
+            filter =  pixel[RED] * .349 + pixel[GREEN] * .686 + pixel[BLUE] * .168;
+            small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
+            image.pixel[line][column][GREEN] = small_r;
+
+            filter =  pixel[RED] * .272 + pixel[GREEN] * .534 + pixel[BLUE] * .131;
+            small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
+            image.pixel[line][column][BLUE] = small_r;
+        }
+    }
+
+    return image;
+}
+
+Image mirroring_filter(Image image, int horizontal) {
+    int width = image.width, height = image.height;
+
+    if (horizontal == 1) width /= 2;
+    else height /= 2;
+
+    for (int line = 0; line < height; ++line) {
+        for (int column = 0; column < width; ++column) {
+            int coord_x = line, coord_y = column;
+
+            if (horizontal == 1) coord_y = image.width - 1 - column;
+            else coord_x = image.height - 1 - line;
+
+            Pixel aux_image;
+            aux_image.red = image.pixel[line][column][RED];
+            aux_image.green = image.pixel[line][column][GREEN];
+            aux_image.blue = image.pixel[line][column][BLUE];
+
+            image.pixel[line][column][RED] = image.pixel[coord_x][coord_y][RED];
+            image.pixel[line][column][GREEN] = image.pixel[coord_x][coord_y][GREEN];
+            image.pixel[line][column][BLUE] = image.pixel[coord_x][coord_y][BLUE];
+
+            image.pixel[coord_x][coord_y][RED] = aux_image.red;
+            image.pixel[coord_x][coord_y][GREEN] = aux_image.green;
+            image.pixel[coord_x][coord_y][BLUE] = aux_image.blue;
+        }
+    }
+
+    return image;
+}
+
+Image read_image() {
     Image image;
 
     // read type of image
@@ -138,112 +178,14 @@ int main() {
     for (unsigned int line = 0; line < image.height; ++line) {
         for (unsigned int column = 0; column < image.width; ++column) {
             scanf("%hu %hu %hu", &image.pixel[line][column][RED],
-                                 &image.pixel[line][column][GREEN],
-                                 &image.pixel[line][column][BLUE]);
-
+            &image.pixel[line][column][GREEN],
+            &image.pixel[line][column][BLUE]);
         }
     }
+    return image;
+}
 
-    int option_limit;
-    scanf("%d", &option_limit);
-
-    for(int count = 0; count < option_limit; ++count) {
-        int option;
-        scanf("%d", &option);
-
-        switch(option) {
-            case 1: { // Escala de Cinza
-                image = gray_scale(image);
-                break;
-            }
-            case 2: { // Filtro Sepia
-                for (unsigned int line = 0; line < image.height; ++line) {
-                    for (unsigned int column = 0; column < image.width; ++column) {
-                        unsigned short int pixel[3];
-                        pixel[RED] = image.pixel[line][column][RED];
-                        pixel[GREEN] = image.pixel[line][column][GREEN];
-                        pixel[BLUE] = image.pixel[line][column][BLUE];
-
-                        int filter =  pixel[RED] * .393 + pixel[GREEN] * .769 + pixel[BLUE] * .189;
-                        int small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
-                        image.pixel[line][column][RED] = small_r;
-
-                        filter =  pixel[RED] * .349 + pixel[GREEN] * .686 + pixel[BLUE] * .168;
-                        small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
-                        image.pixel[line][column][GREEN] = small_r;
-
-                        filter =  pixel[RED] * .272 + pixel[GREEN] * .534 + pixel[BLUE] * .131;
-                        small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
-                        image.pixel[line][column][BLUE] = small_r;
-                    }
-                }
-
-                break;
-            }
-            case 3: { // Blur
-                int blur_size = 0;
-                scanf("%d", &blur_size);
-                blur(image.height, image.pixel, blur_size, image.width);
-                break;
-            }
-            case 4: { // Rotacao
-                int rotation_count = 0;
-                scanf("%d", &rotation_count);
-                rotation_count %= 4;
-                for (int count = 0; count < rotation_count; ++count) {
-                    image = rotate_right_90(image);
-                }
-                break;
-            }
-            case 5: { // Espelhamento
-                int horizontal = 0;
-                scanf("%d", &horizontal);
-
-                int width = image.width, height = image.height;
-
-                if (horizontal == 1) width /= 2;
-                else height /= 2;
-
-                for (int line = 0; line < height; ++line) {
-                    for (int column = 0; column < width; ++column) {
-                        int coord_x = line, coord_y = column;
-
-                        if (horizontal == 1) coord_y = image.width - 1 - column;
-                        else coord_x = image.height - 1 - line;
-
-                        Pixel aux_image;
-                        aux_image.red = image.pixel[line][column][RED];
-                        aux_image.green = image.pixel[line][column][GREEN];
-                        aux_image.blue = image.pixel[line][column][BLUE];
-
-                        image.pixel[line][column][RED] = image.pixel[coord_x][coord_y][RED];
-                        image.pixel[line][column][GREEN] = image.pixel[coord_x][coord_y][GREEN];
-                        image.pixel[line][column][BLUE] = image.pixel[coord_x][coord_y][BLUE];
-
-                        image.pixel[coord_x][coord_y][RED] = aux_image.red;
-                        image.pixel[coord_x][coord_y][GREEN] = aux_image.green;
-                        image.pixel[coord_x][coord_y][BLUE] = aux_image.blue;
-                    }
-                }
-                break;
-            }
-            case 6: { // Inversao de Cores
-                invert_colors(image.pixel, image.width, image.height);
-                break;
-            }
-            case 7: { // Cortar Imagem
-                int coord_x, coord_y;
-                scanf("%d %d", &coord_x, &coord_y);
-                int width, height;
-                scanf("%d %d", &width, &height);
-
-                image = cut_image(image, coord_x, coord_y, width, height);
-                break;
-            }
-        }
-
-    }
-
+void write_image(Image image) {
     // print type of image
     printf("P3\n");
     // print width height and color of image
@@ -259,5 +201,60 @@ int main() {
         }
         printf("\n");
     }
+}
+
+int main() {
+    Image image;
+    int option_limit;
+    int option;
+
+    image = read_image();
+
+    scanf("%d", &option_limit);
+
+    for(int count = 0; count < option_limit; ++count) {
+        scanf("%d", &option);
+        switch(option) {
+            case 1: {
+                image = gray_scale_filter(image);
+                break;
+            }
+            case 2: {
+                image = sepia_filter(image);
+                break;
+            }
+            case 3: {
+                int blur_size;
+                scanf("%d", &blur_size);
+                blur_filter(image.height, image.width, image.pixel, blur_size);
+                break;
+            }
+            case 4: {
+                int rotation_count;
+                scanf("%d", &rotation_count);
+                rotation_count %= 4;
+                for (int count = 0; count < rotation_count; ++count)
+                    image = rotate_right_90_filter(image);
+                break;
+            }
+            case 5: {
+                int horizontal;
+                scanf("%d", &horizontal);
+                image = mirroring_filter(image, horizontal);
+                break;
+            }
+            case 6: {
+                invert_colors_filter(image.pixel, image.width, image.height);
+                break;
+            }
+            case 7: {
+                int coord_x, coord_y, width, height;
+                scanf("%d %d %d %d", &coord_x, &coord_y, &width, &height);
+                image = cut_image_filter(image, coord_x, coord_y, width, height);
+            }
+        }
+    }
+
+    write_image(image);
     return 0;
 }
