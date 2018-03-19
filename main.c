@@ -1,4 +1,12 @@
 #include <stdio.h>
+#define WIDTH 512
+#define HEIGHT 512
+#define RGB 3
+#define RED 0
+#define GREEN 1
+#define BLUE 2
+#define MAX_COLOR 255
+#define MAX_TYPE 4
 
 typedef struct _pixel {
     unsigned short int red;
@@ -7,11 +15,7 @@ typedef struct _pixel {
 } Pixel;
 
 typedef struct _image {
-    // [width][height][rgb]
-    // 0 -> r
-    // 1 -> g
-    // 2 -> b
-    unsigned short int pixel[512][512][3];
+    unsigned short int pixel[WIDTH][HEIGHT][RGB];
     unsigned int width;
     unsigned int height;
 } Image;
@@ -27,26 +31,26 @@ int pixel_igual(Pixel pixel1, Pixel pixel2) {
 Image escala_de_cinza(Image image) {
     /*for (unsigned int i = 0; i < image.h; ++i) {
         for (unsigned int j = 0; j < image.w; ++j) {
-            print("%u", image.pixel[i][j][0] + image.pixel[i][j][1] + image.pixel[i][j][2]);
+            print("%u", image.pixel[i][j][RED] + image.pixel[i][j][GREEN] + image.pixel[i][j][BLUE]);
         }
     }*/
 
     for (unsigned int line = 0; line < image.height; ++line) {
         for (unsigned int column = 0; column < image.width; ++column) {
-            int average = image.pixel[line][column][0] +
-                        image.pixel[line][column][1] +
-                        image.pixel[line][column][2];
+            int average = image.pixel[line][column][RED] +
+                        image.pixel[line][column][GREEN] +
+                        image.pixel[line][column][BLUE];
             average /= 3;
-            image.pixel[line][column][0] = average;
-            image.pixel[line][column][1] = average;
-            image.pixel[line][column][2] = average;
+            image.pixel[line][column][RED] = average;
+            image.pixel[line][column][GREEN] = average;
+            image.pixel[line][column][BLUE] = average;
         }
     }
 
     return image;
 }
 
-void blur(unsigned int height, unsigned short int pixel[512][512][3], int blur_size, unsigned int width) {
+void blur(unsigned int height, unsigned short int pixel[WIDTH][HEIGHT][RGB], int blur_size, unsigned int width) {
     for (unsigned int line = 0; line < height; ++line) {
         for (unsigned int column = 0; column < width; ++column) {
             Pixel average = {0, 0, 0};
@@ -55,9 +59,9 @@ void blur(unsigned int height, unsigned short int pixel[512][512][3], int blur_s
             int min_width = (width - 1 > column + blur_size/2) ? column + blur_size/2 : width - 1;
             for(int line2 = (0 > line - blur_size/2 ? 0 : line - blur_size/2); line2 <= small_height; ++line2) {
                 for(int column2 = (0 > column - blur_size/2 ? 0 : column - blur_size/2); column2 <= min_width; ++column2) {
-                    average.red += pixel[line2][column2][0];
-                    average.green += pixel[line2][column2][1];
-                    average.blue += pixel[line2][column2][2];
+                    average.red += pixel[line2][column2][RED];
+                    average.green += pixel[line2][column2][GREEN];
+                    average.blue += pixel[line2][column2][BLUE];
                 }
             }
 
@@ -66,9 +70,9 @@ void blur(unsigned int height, unsigned short int pixel[512][512][3], int blur_s
             average.green /= blur_size * blur_size;
             average.blue /= blur_size * blur_size;
 
-            pixel[line][column][0] = average.red;
-            pixel[line][column][1] = average.green;
-            pixel[line][column][2] = average.blue;
+            pixel[line][column][RED] = average.red;
+            pixel[line][column][GREEN] = average.green;
+            pixel[line][column][BLUE] = average.blue;
         }
     }
 }
@@ -81,22 +85,22 @@ Image rotacionar90direita(Image image) {
 
     for (unsigned int line = 0, line2 = 0; line < rotation.height; ++line, ++line2) {
         for (int column = rotation.width - 1, column2 = 0; column >= 0; --column, ++column2) {
-            rotation.pixel[line][column][0] = image.pixel[line2][column2][0];
-            rotation.pixel[line][column][1] = image.pixel[line2][column2][1];
-            rotation.pixel[line][column][2] = image.pixel[line2][column2][2];
+            rotation.pixel[line][column][RED] = image.pixel[line2][column2][RED];
+            rotation.pixel[line][column][GREEN] = image.pixel[line2][column2][GREEN];
+            rotation.pixel[line][column][BLUE] = image.pixel[line2][column2][BLUE];
         }
     }
 
     return rotation;
 }
 
-void inverter_cores(unsigned short int pixel[512][512][3],
+void inverter_cores(unsigned short int pixel[WIDTH][HEIGHT][RGB],
                     unsigned int width, unsigned int height) {
     for (unsigned int line = 0; line < height; ++line) {
         for (unsigned int column = 0; column < width; ++column) {
-            pixel[line][column][0] = 255 - pixel[line][column][0];
-            pixel[line][column][1] = 255 - pixel[line][column][1];
-            pixel[line][column][2] = 255 - pixel[line][column][2];
+            pixel[line][column][RED] = MAX_COLOR - pixel[line][column][RED];
+            pixel[line][column][GREEN] = MAX_COLOR - pixel[line][column][GREEN];
+            pixel[line][column][BLUE] = MAX_COLOR - pixel[line][column][BLUE];
         }
     }
 }
@@ -109,9 +113,9 @@ Image cortar_imagem(Image image, int coord_x, int coord_y, int width, int height
 
     for(int line = 0; line < height; ++line) {
         for(int column = 0; column < width; ++column) {
-            cropped.pixel[line][column][0] = image.pixel[line + coord_x][column + coord_y][0];
-            cropped.pixel[line][column][1] = image.pixel[line + coord_x][column + coord_y][1];
-            cropped.pixel[line][column][2] = image.pixel[line + coord_x][column + coord_y][2];
+            cropped.pixel[line][column][RED] = image.pixel[line + coord_x][column + coord_y][RED];
+            cropped.pixel[line][column][GREEN] = image.pixel[line + coord_x][column + coord_y][GREEN];
+            cropped.pixel[line][column][BLUE] = image.pixel[line + coord_x][column + coord_y][BLUE];
         }
     }
 
@@ -123,7 +127,7 @@ int main() {
     Image image;
 
     // read type of image
-    char image_type[4];
+    char image_type[MAX_TYPE];
     scanf("%s", image_type);
 
     // read width height and color of image
@@ -133,9 +137,9 @@ int main() {
     // read all pixels of image
     for (unsigned int line = 0; line < image.height; ++line) {
         for (unsigned int column = 0; column < image.width; ++column) {
-            scanf("%hu %hu %hu", &image.pixel[line][column][0],
-                                 &image.pixel[line][column][1],
-                                 &image.pixel[line][column][2]);
+            scanf("%hu %hu %hu", &image.pixel[line][column][RED],
+                                 &image.pixel[line][column][GREEN],
+                                 &image.pixel[line][column][BLUE]);
 
         }
     }
@@ -156,21 +160,21 @@ int main() {
                 for (unsigned int line = 0; line < image.height; ++line) {
                     for (unsigned int column = 0; column < image.width; ++column) {
                         unsigned short int pixel[3];
-                        pixel[0] = image.pixel[line][column][0];
-                        pixel[1] = image.pixel[line][column][1];
-                        pixel[2] = image.pixel[line][column][2];
+                        pixel[RED] = image.pixel[line][column][RED];
+                        pixel[GREEN] = image.pixel[line][column][GREEN];
+                        pixel[BLUE] = image.pixel[line][column][BLUE];
 
-                        int filter =  pixel[0] * .393 + pixel[1] * .769 + pixel[2] * .189;
-                        int small_r = (255 >  filter) ? filter : 255;
-                        image.pixel[line][column][0] = small_r;
+                        int filter =  pixel[RED] * .393 + pixel[GREEN] * .769 + pixel[BLUE] * .189;
+                        int small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
+                        image.pixel[line][column][RED] = small_r;
 
-                        filter =  pixel[0] * .349 + pixel[1] * .686 + pixel[2] * .168;
-                        small_r = (255 >  filter) ? filter : 255;
-                        image.pixel[line][column][1] = small_r;
+                        filter =  pixel[RED] * .349 + pixel[GREEN] * .686 + pixel[BLUE] * .168;
+                        small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
+                        image.pixel[line][column][GREEN] = small_r;
 
-                        filter =  pixel[0] * .272 + pixel[1] * .534 + pixel[2] * .131;
-                        small_r = (255 >  filter) ? filter : 255;
-                        image.pixel[line][column][2] = small_r;
+                        filter =  pixel[RED] * .272 + pixel[GREEN] * .534 + pixel[BLUE] * .131;
+                        small_r = (MAX_COLOR >  filter) ? filter : MAX_COLOR;
+                        image.pixel[line][column][BLUE] = small_r;
                     }
                 }
 
@@ -208,17 +212,17 @@ int main() {
                         else coord_x = image.height - 1 - line;
 
                         Pixel aux_image;
-                        aux_image.red = image.pixel[line][column][0];
-                        aux_image.green = image.pixel[line][column][1];
-                        aux_image.blue = image.pixel[line][column][2];
+                        aux_image.red = image.pixel[line][column][RED];
+                        aux_image.green = image.pixel[line][column][GREEN];
+                        aux_image.blue = image.pixel[line][column][BLUE];
 
-                        image.pixel[line][column][0] = image.pixel[coord_x][coord_y][0];
-                        image.pixel[line][column][1] = image.pixel[coord_x][coord_y][1];
-                        image.pixel[line][column][2] = image.pixel[coord_x][coord_y][2];
+                        image.pixel[line][column][RED] = image.pixel[coord_x][coord_y][RED];
+                        image.pixel[line][column][GREEN] = image.pixel[coord_x][coord_y][GREEN];
+                        image.pixel[line][column][BLUE] = image.pixel[coord_x][coord_y][BLUE];
 
-                        image.pixel[coord_x][coord_y][0] = aux_image.red;
-                        image.pixel[coord_x][coord_y][1] = aux_image.green;
-                        image.pixel[coord_x][coord_y][2] = aux_image.blue;
+                        image.pixel[coord_x][coord_y][RED] = aux_image.red;
+                        image.pixel[coord_x][coord_y][GREEN] = aux_image.green;
+                        image.pixel[coord_x][coord_y][BLUE] = aux_image.blue;
                     }
                 }
                 break;
@@ -248,9 +252,9 @@ int main() {
     // print pixels of image
     for (unsigned int line = 0; line < image.height; ++line) {
         for (unsigned int column = 0; column < image.width; ++column) {
-            printf("%hu %hu %hu ", image.pixel[line][column][0],
-                                   image.pixel[line][column][1],
-                                   image.pixel[line][column][2]);
+            printf("%hu %hu %hu ", image.pixel[line][column][RED],
+                                   image.pixel[line][column][GREEN],
+                                   image.pixel[line][column][BLUE]);
 
         }
         printf("\n");
