@@ -15,7 +15,7 @@ typedef struct _image {
     unsigned int height;
 } Image;
 
-int max(int a, int b) {
+int maximum(int a, int b) {
     if (a > b)
         return a;
     return b;
@@ -69,8 +69,8 @@ Image blur_filter(Image image, int blur_size) {
 
             int min_height = minimal(i + blur_size/2, image.height - 1);
             int min_width = minimal(j + blur_size/2, image.width - 1);
-            for(int x = (0 > i - blur_size/2 ? 0 : i - blur_size/2); x <= min_height; ++x) {
-                for(int y = (0 > j - blur_size/2 ? 0 : j - blur_size/2); y <= min_width; ++y) {
+            for(int x = maximum(0, i - blur_size/2); x <= min_height; ++x) {
+                for(int y = maximum(0, j - blur_size/2); y <= min_width; ++y) {
                     media.red += image.pixel[x][y].red;
                     media.green += image.pixel[x][y].green;
                     media.blue += image.pixel[x][y].blue;
