@@ -31,25 +31,6 @@ int minimal(int a, int b) {
     return b;
 }
 
-int pixel_igual(Pixel p1, Pixel p2) {
-    if (p1.red == p2.red &&
-        p1.green == p2.green &&
-        p1.blue == p2.blue)
-        return 1;
-    return 0;
-}
-
-void set_width_height(Image *image, unsigned int widht, unsigned int height) {
-    image->width = widht;
-    image->height = height;
-}
-
-Pixel set_colors_pixel(Pixel *self, Pixel pixel) {
-    self->red = pixel.red;
-    self->green = pixel.green;
-    self->blue = pixel.blue;
-}
-
 Image gray_scale_filter(Image image) {
     for (unsigned int i = 0; i < image.height; ++i) {
         for (unsigned int j = 0; j < image.width; ++j) {
@@ -86,7 +67,9 @@ Image blur_filter(Image image, unsigned int blur_size) {
             media.green /= square;
             media.blue /= square;
 
-            set_colors_pixel(&image.pixel[i][j], media);
+            image.pixel[i][j].red = media.red;
+            image.pixel[i][j].green = media.green;
+            image.pixel[i][j].blue = media.blue;
         }
     }
 
@@ -96,11 +79,14 @@ Image blur_filter(Image image, unsigned int blur_size) {
 Image rotation90_filter(Image image) {
     Image rotated;
 
-    set_width_height(&rotated, image.width, image.height);
+    rotated.width = image.width;
+    rotated.height = image.height;
 
     for (unsigned int i = 0, y = 0; i < rotated.height; ++i, ++y) {
         for (int j = rotated.width - 1, x = 0; j >= 0; --j, ++x) {
-            set_colors_pixel(&rotated.pixel[i][j], image.pixel[x][y]);
+            rotated.pixel[i][j].red = image.pixel[x][y].red;
+            rotated.pixel[i][j].green = image.pixel[x][y].green;
+            rotated.pixel[i][j].blue = image.pixel[x][y].blue;
         }
     }
 
@@ -124,11 +110,14 @@ Image cut_filter(Image image, unsigned int x,
                  unsigned int height) {
     Image cut_image;
 
-    set_width_height(&cut_image, width, height);
+    cut_image.width = width;
+    cut_image.height = height;
 
     for(unsigned int i = 0; i < height; ++i) {
         for(unsigned int j = 0; j < width; ++j) {
-            set_colors_pixel(&cut_image.pixel[i][j], image.pixel[i + y][j + x]);
+            cut_image.pixel[i][j].red = image.pixel[i + y][j + x].red;
+            cut_image.pixel[i][j].green = image.pixel[i + y][j + x].green;
+            cut_image.pixel[i][j].blue = image.pixel[i + y][j + x].blue;
         }
     }
 
@@ -181,9 +170,17 @@ Image mirror_filter(Image image) {
             else
                 x = image.height - 1 - i;
 
-            set_colors_pixel(&temp, image.pixel[i][j]);
-            set_colors_pixel(&image.pixel[i][j], image.pixel[x][y]);
-            set_colors_pixel(&image.pixel[x][y], temp);
+            temp.red = image.pixel[i][j].red;
+            temp.green = image.pixel[i][j].green;
+            temp.blue = image.pixel[i][j].blue;
+
+            image.pixel[i][j].red = image.pixel[x][y].red;
+            image.pixel[i][j].green = image.pixel[x][y].green;
+            image.pixel[i][j].blue = image.pixel[x][y].blue;
+
+            image.pixel[x][y].red = temp.red;
+            image.pixel[x][y].green = temp.green;
+            image.pixel[x][y].blue = temp.blue;
         }
     }
 
