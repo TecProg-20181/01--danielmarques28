@@ -2,6 +2,10 @@
 #define WIDTH 512
 #define HEIGHT 512
 #define COLOR_LIMIT 255
+#define RED 0
+#define GREEN 1
+#define BLUE 2
+#define RGB 3
 
 typedef struct _pixel {
     unsigned short int red;
@@ -62,15 +66,15 @@ Image gray_scale_filter(Image image) {
     return image;
 }
 
-Image blur_filter(Image image, int blur_size) {
+Image blur_filter(Image image, unsigned int blur_size) {
     for (unsigned int i = 0; i < image.height; ++i) {
         for (unsigned int j = 0; j < image.width; ++j) {
             Pixel media = {0, 0, 0};
 
             int min_height = minimal(i + blur_size/2, image.height - 1);
             int min_width = minimal(j + blur_size/2, image.width - 1);
-            for(int x = maximum(0, i - blur_size/2); x <= min_height; ++x) {
-                for(int y = maximum(0, j - blur_size/2); y <= min_width; ++y) {
+            for(unsigned int x = maximum(0, i - blur_size/2); x <= min_height; ++x) {
+                for(unsigned int y = maximum(0, j - blur_size/2); y <= min_width; ++y) {
                     media.red += image.pixel[x][y].red;
                     media.green += image.pixel[x][y].green;
                     media.blue += image.pixel[x][y].blue;
@@ -115,13 +119,15 @@ Image reverse_colors_filter(Image image) {
     return image;
 }
 
-Image cut_filter(Image image, unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
+Image cut_filter(Image image, unsigned int x,
+                 unsigned int y, unsigned int width,
+                 unsigned int height) {
     Image cut_image;
 
     set_width_height(&cut_image, width, height);
 
-    for(int i = 0; i < height; ++i) {
-        for(int j = 0; j < width; ++j) {
+    for(unsigned int i = 0; i < height; ++i) {
+        for(unsigned int j = 0; j < width; ++j) {
             set_colors_pixel(&cut_image.pixel[i][j], image.pixel[i + y][j + x]);
         }
     }
@@ -132,22 +138,22 @@ Image cut_filter(Image image, unsigned int x, unsigned int y, unsigned int width
 Image sepia_filter(Image image) {
     for (unsigned int x = 0; x < image.height; ++x) {
         for (unsigned int j = 0; j < image.width; ++j) {
-            unsigned short int pixel[3];
-            pixel[0] = image.pixel[x][j].red;
-            pixel[1] = image.pixel[x][j].green;
-            pixel[2] = image.pixel[x][j].blue;
+            unsigned short int pixel[RGB];
+            pixel[RED] = image.pixel[x][j].red;
+            pixel[GREEN] = image.pixel[x][j].green;
+            pixel[BLUE] = image.pixel[x][j].blue;
 
-            int p =  pixel[0] * .393 + pixel[1] * .769 + pixel[2] * .189;
-            int small_r = minimal(p, COLOR_LIMIT);
-            image.pixel[x][j].red = small_r;
+            unsigned int p =  pixel[RED] * .393 + pixel[GREEN] * .769 + pixel[BLUE] * .189;
+            unsigned int smaller_color = minimal(p, COLOR_LIMIT);
+            image.pixel[x][j].red = smaller_color;
 
-            p =  pixel[0] * .349 + pixel[1] * .686 + pixel[2] * .168;
-            small_r = minimal(p, COLOR_LIMIT);
-            image.pixel[x][j].green = small_r;
+            p =  pixel[RED] * .349 + pixel[GREEN] * .686 + pixel[BLUE] * .168;
+            smaller_color = minimal(p, COLOR_LIMIT);
+            image.pixel[x][j].green = smaller_color;
 
-            p =  pixel[0] * .272 + pixel[1] * .534 + pixel[2] * .131;
-            small_r = minimal(p, COLOR_LIMIT);
-            image.pixel[x][j].blue = small_r;
+            p =  pixel[RED] * .272 + pixel[GREEN] * .534 + pixel[BLUE] * .131;
+            smaller_color = minimal(p, COLOR_LIMIT);
+            image.pixel[x][j].blue = smaller_color;
         }
     }
 
@@ -157,11 +163,14 @@ Image sepia_filter(Image image) {
 Image mirror_filter(Image image) {
     int horizontal = 0;
     int width = image.width, height = image.height;
+    Pixel temp;
 
     scanf("%d", &horizontal);
 
-    if (horizontal == 1) width /= 2;
-    else height /= 2;
+    if (horizontal == 1)
+        width /= 2;
+    else
+        height /= 2;
 
     for (int i = 0; i < height; ++i) {
         for (int j = 0; j < width; ++j) {
@@ -172,7 +181,6 @@ Image mirror_filter(Image image) {
             else
                 x = image.height - 1 - i;
 
-            Pixel temp;
             set_colors_pixel(&temp, image.pixel[i][j]);
             set_colors_pixel(&image.pixel[i][j], image.pixel[x][y]);
             set_colors_pixel(&image.pixel[x][y], temp);
@@ -198,7 +206,6 @@ Image read_image(Image image) {
             scanf("%hu %hu %hu", &image.pixel[i][j].red,
                                  &image.pixel[i][j].green,
                                  &image.pixel[i][j].blue);
-
         }
     }
 
@@ -225,16 +232,13 @@ void write_image(Image image) {
 
 int main() {
     Image image;
-    int limit;
+    int limit, option, x, y, width, height;
 
     image = read_image(image);
 
     scanf("%d", &limit);
-
-    for(int i = 0; i < limit; ++i) {
-        int option;
+    for(unsigned int i = 0; i < limit; ++i) {
         scanf("%d", &option);
-
         switch(option) {
             case 1: {
                 image = gray_scale_filter(image);
@@ -245,16 +249,16 @@ int main() {
                 break;
             }
             case 3: {
-                int blur_size;
-                scanf("%d", &blur_size);
+                unsigned blur_size;
+                scanf("%u", &blur_size);
                 image = blur_filter(image, blur_size);
                 break;
             }
             case 4: {
-                int count;
-                scanf("%d", &count);
+                unsigned int count;
+                scanf("%u", &count);
                 count %= 4;
-                for (int j = 0; j < count; ++j) {
+                for (unsigned int j = 0; j < count; ++j) {
                     image = rotation90_filter(image);
                 }
                 break;
@@ -268,9 +272,7 @@ int main() {
                 break;
             }
             case 7: {
-                int x, y, width, height;
                 scanf("%u %u %u %u", &x, &y, &width, &height);
-
                 image = cut_filter(image, x, y, width, height);
             }
         }
