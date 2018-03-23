@@ -62,24 +62,25 @@ Image gray_scale_filter(Image image) {
     return image;
 }
 
-Image blur_filter(Image image, int T) {
+Image blur_filter(Image image, int blur_size) {
     for (unsigned int i = 0; i < image.height; ++i) {
         for (unsigned int j = 0; j < image.width; ++j) {
             Pixel media = {0, 0, 0};
 
-            int min_height = minimal(i + T/2, image.height - 1);
-            int min_width = minimal(j + T/2, image.width - 1);
-            for(int x = (0 > i - T/2 ? 0 : i - T/2); x <= min_height; ++x) {
-                for(int y = (0 > j - T/2 ? 0 : j - T/2); y <= min_width; ++y) {
+            int min_height = minimal(i + blur_size/2, image.height - 1);
+            int min_width = minimal(j + blur_size/2, image.width - 1);
+            for(int x = (0 > i - blur_size/2 ? 0 : i - blur_size/2); x <= min_height; ++x) {
+                for(int y = (0 > j - blur_size/2 ? 0 : j - blur_size/2); y <= min_width; ++y) {
                     media.red += image.pixel[x][y].red;
                     media.green += image.pixel[x][y].green;
                     media.blue += image.pixel[x][y].blue;
                 }
             }
 
-            media.red /= T * T;
-            media.green /= T * T;
-            media.blue /= T * T;
+            unsigned int square = blur_size * blur_size;
+            media.red /= square;
+            media.green /= square;
+            media.blue /= square;
 
             set_colors_pixel(&image.pixel[i][j], media);
         }
@@ -114,7 +115,7 @@ Image reverse_colors_filter(Image image) {
     return image;
 }
 
-Image cut_filter(Image image, int x, int y, int width, int height) {
+Image cut_filter(Image image, unsigned int x, unsigned int y, unsigned int width, unsigned int height) {
     Image cut_image;
 
     set_width_height(&cut_image, width, height);
@@ -235,45 +236,42 @@ int main() {
         scanf("%d", &option);
 
         switch(option) {
-            case 1: { // Escala de Cinza
+            case 1: {
                 image = gray_scale_filter(image);
                 break;
             }
-            case 2: { // Filtro Sepia
+            case 2: {
                 image = sepia_filter(image);
                 break;
             }
-            case 3: { // Blur
-                int tamanho = 0;
-                scanf("%d", &tamanho);
-                image = blur_filter(image, tamanho);
+            case 3: {
+                int blur_size;
+                scanf("%d", &blur_size);
+                image = blur_filter(image, blur_size);
                 break;
             }
-            case 4: { // Rotacao
-                int quantas_vezes = 0;
-                scanf("%d", &quantas_vezes);
-                quantas_vezes %= 4;
-                for (int j = 0; j < quantas_vezes; ++j) {
+            case 4: {
+                int count;
+                scanf("%d", &count);
+                count %= 4;
+                for (int j = 0; j < count; ++j) {
                     image = rotation90_filter(image);
                 }
                 break;
             }
-            case 5: { // Espelhamento
+            case 5: {
                 image = mirror_filter(image);
                 break;
             }
-            case 6: { // Inversao de Cores
+            case 6: {
                 image = reverse_colors_filter(image);
                 break;
             }
-            case 7: { // Cortar Imagem
-                int x, y;
-                scanf("%d %d", &x, &y);
-                int width, height;
-                scanf("%d %d", &width, &height);
+            case 7: {
+                int x, y, width, height;
+                scanf("%u %u %u %u", &x, &y, &width, &height);
 
                 image = cut_filter(image, x, y, width, height);
-                break;
             }
         }
     }
